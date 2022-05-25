@@ -36,7 +36,9 @@ donnees["category"] = categorie[2].text
 donnees["review_rating"] = info["Number of reviews"]
 
 image = soup.find("div", class_="item active").find("img")
-donnees["image_url"] = ("http://books.toscrape.com/" + image["src"])
+lien = image["src"]
+lien = lien.replace("../../", "http://books.toscrape.com/")
+donnees["image_url"] = lien
 
 # chargement des donnees dans un fichier CSV
 with open("donnees_livre.csv", "w", newline="") as fichier_csv:
