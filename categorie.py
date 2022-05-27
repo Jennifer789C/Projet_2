@@ -2,20 +2,41 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 
-# extraction du code HTML de la categorie Humour
-url = "http://books.toscrape.com/catalogue/category/books/humor_30/index.html"
+# extraction du code HTML de la categorie Fantaisie
+url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/index.html"
 page = requests.get(url)
 
 # transformation du code HTML en objet BeautifulSoup
 soup = BeautifulSoup(page.content, "html.parser")
 
-# extraction de toutes les url des pages Produits de la categorie Humour (seulement 10 livres = 1 page)
+# extraction des url des pages Produits de la première page
 livres = soup.findAll("h3")
-liens = []
+liens_livres = []
 for livre in livres:
     lien = livre.find("a")["href"]
     lien = lien.replace("../../../", "http://books.toscrape.com/catalogue/")
-    liens.append(lien)
+    liens_livres.append(lien)
+
+# extraction des url des pages Produits des pages suivantes (3 pages)
+page_suivante = soup.find("li", class_="next")
+page_precedente = "index.html"
+
+while page_suivante:
+    lien_page_suivante = page_suivante.find("a")["href"]
+    url = url.replace(page_precedente, lien_page_suivante)
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    page_suivante = soup.find("li", class_="next") # recherche dans cette page s'il y en existe une autre
+    page_precedente = lien_page_suivante
+
+    livres = soup.findAll("h3")
+    for livre in livres:
+        lien = livre.find("a")["href"]
+        lien = lien.replace("../../../", "http://books.toscrape.com/catalogue/")
+        liens_livres.append(lien)
+print(len(liens_livres))
+
 
 # chargement des donnees dans un fichier CSV
 donnees = {"product_page_url":0, "universal_product_code":0, "title":0, "price_including_tax":0, "price_excluding_tax":0, "number_available":0, "product_description":0, "category":0, "review_rating":0, "image_url":0}
@@ -23,8 +44,8 @@ with open("donnees_categorie.csv", "w", newline="") as fichier_csv:
     writer = csv.DictWriter(fichier_csv, donnees)
     writer.writeheader()
 
-# etl de chaque page Produit de la categorie Humour
-    for url in liens:
+# etl de chaque page Produit
+    for url in liens_livres:
         page = requests.get(url)
         donnees["product_page_url"] = url
 
