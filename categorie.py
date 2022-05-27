@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import csv
 
 # extraction du code HTML de la categorie Fantaisie
-url = "http://books.toscrape.com/catalogue/category/books/fantasy_19/index.html"
+url = "http://books.toscrape.com/catalogue/category/books/sequential-art_5/index.html"
 page = requests.get(url)
 
 # transformation du code HTML en objet BeautifulSoup
@@ -40,7 +40,7 @@ print(len(liens_livres))
 
 # chargement des donnees dans un fichier CSV
 donnees = {"product_page_url":0, "universal_product_code":0, "title":0, "price_including_tax":0, "price_excluding_tax":0, "number_available":0, "product_description":0, "category":0, "review_rating":0, "image_url":0}
-with open("donnees_categorie.csv", "w", newline="") as fichier_csv:
+with open("donnees_categorie.csv", "w", newline="", encoding="utf-8") as fichier_csv:
     writer = csv.DictWriter(fichier_csv, donnees)
     writer.writeheader()
 
