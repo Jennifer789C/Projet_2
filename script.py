@@ -21,7 +21,6 @@ for categorie in navigation:
     categories[nom] = lien
 
 # etl des donnees pour chaque categorie
-donnees = {"product_page_url":0, "universal_product_code":0, "title":0, "price_including_tax":0, "price_excluding_tax":0, "number_available":0, "product_description":0, "category":0, "review_rating":0, "image_url":0}
 for categorie, lien_categorie in categories.items():
     page = requests.get(lien_categorie)
     soup = BeautifulSoup(page.content, "html.parser")
@@ -45,7 +44,7 @@ for categorie, lien_categorie in categories.items():
         page = requests.get(url)
         soup = BeautifulSoup(page.content, "html.parser")
 
-        page_suivante = soup.find("li", class_="next")  # recherche dans cette page s'il y en existe une autre
+        page_suivante = soup.find("li", class_="next")  # recherche dans cette page s'il en existe une autre
         page_precedente = lien_page_suivante
 
         livres = soup.findAll("h3")
