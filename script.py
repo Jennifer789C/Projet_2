@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import os
+import re
 
 # extraction du code HTML de la page d'accueil du site
 url = "http://books.toscrape.com/"
@@ -14,11 +16,13 @@ navigation = soup.find("ul", class_="nav nav-list").find("ul").findAll("li")
 categories = {}
 for categorie in navigation:
     nom = categorie.find("a").string
-    nom = nom.replace("\n                            \n                                ","")
-    nom = nom.replace("\n                            \n                        ","")
+    nom = nom.replace("\n                            \n                                ", "")
+    nom = nom.replace("\n                            \n                        ", "")
     lien = categorie.find("a")["href"]
     lien = url + lien
     categories[nom] = lien
+
+chemin = os.getcwd()
 
 # etl des donnees pour chaque categorie
 for categorie, lien_categorie in categories.items():
@@ -53,9 +57,34 @@ for categorie, lien_categorie in categories.items():
             lien = lien.replace("../../../", "http://books.toscrape.com/catalogue/")
             liens_livres.append(lien)
 
-    print("Dans la catégorie " + categorie + ", il y a " + str(len(liens_livres)) + " livres. Création du fichier csv ...")
+    print("Dans la catégorie " + categorie + ", il y a " + str(len(liens_livres)) + " livres. ")
+
+    # creation d'un dossier par categorie
+    os.mkdir(categorie)
+    path = os.path.join(chemin, categorie)
+    os.chdir(path)
+
+    # extraction des images par categorie
+    print("Extraction des images de couverture")
+
+    for url in liens_livres:
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        titre = soup.find("h1")
+        titre = titre.string
+        titre = re.sub(r"[^a-zA-Z0-9 ]", "", titre)
+
+        img = soup.find("div", class_="item active").find("img")
+        lien_img = img["src"]
+        lien_img = lien_img.replace("../../", "http://books.toscrape.com/")
+        image = requests.get(lien_img).content
+        with open(titre + ".jpg", "wb") as file:
+            file.write(image)
 
     # chargement des donnees dans un fichier CSV
+    print("Création du fichier csv contenant les données de chaque livre")
+
     donnees = {"product_page_url": 0, "universal_product_code": 0, "title": 0, "price_including_tax": 0,
                "price_excluding_tax": 0, "number_available": 0, "product_description": 0, "category": 0,
                "review_rating": 0, "image_url": 0}
@@ -79,7 +108,9 @@ for categorie, lien_categorie in categories.items():
             donnees["universal_product_code"] = info["UPC"]
 
             titre = soup.find("h1")
-            donnees["title"] = titre.string
+            titre = titre.string
+            titre = re.sub(r"[^a-zA-Z0-9 ]", "", titre)
+            donnees["title"] = titre
 
             donnees["price_including_tax"] = info["Price (incl. tax)"]
             donnees["price_excluding_tax"] = info["Price (excl. tax)"]
@@ -93,11 +124,12 @@ for categorie, lien_categorie in categories.items():
 
             donnees["review_rating"] = info["Number of reviews"]
 
-            image = soup.find("div", class_="item active").find("img")
-            lien = image["src"]
-            lien = lien.replace("../../", "http://books.toscrape.com/")
-            donnees["image_url"] = lien
+            img = soup.find("div", class_="item active").find("img")
+            lien_img = img["src"]
+            lien_img = lien_img.replace("../../", "http://books.toscrape.com/")
+            donnees["image_url"] = lien_img
 
             writer.writerow(donnees)
 
+    os.chdir(chemin)
     print("passage à la catégorie suivante")
