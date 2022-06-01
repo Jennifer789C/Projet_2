@@ -1,82 +1,65 @@
 import requests
 from bs4 import BeautifulSoup
-import os
 import re
 
-# extraction du code HTML de la page d'accueil du site
-url = "http://books.toscrape.com/"
-page = requests.get(url)
 
-# transformation du code HTML en objet BeautifulSoup
-soup = BeautifulSoup(page.content, "html.parser")
+def telecharger_images(url_livre):
+    # définition de la fonction telecharger_images pour télécharger toutes les images de couverture des livres d'une catégorie
 
-# extraction des url des pages Categories
-navigation = soup.find("ul", class_="nav nav-list").find("ul").findAll("li")
-categories = {}
-for categorie in navigation:
-    nom = categorie.find("a").string
-    nom = nom.replace("\n                            \n                                ", "")
-    nom = nom.replace("\n                            \n                        ", "")
-    lien = categorie.find("a")["href"]
-    lien = url + lien
-    categories[nom] = lien
+    page = requests.get(url_livre)  # extraction du code HTML du livre
+    soup = BeautifulSoup(page.content, "html.parser")  # transformation du code HTML en objet soup
 
-chemin = os.getcwd()
+    # extraction du titre
+    titre = soup.find("h1")
+    titre = titre.string
+    titre = re.sub(r"[^a-zA-Z0-9 ]", "", titre)  # suppression des caractères spéciaux
 
-# etl des donnees pour chaque categorie
-for categorie, lien_categorie in categories.items():
-    page = requests.get(lien_categorie)
-    soup = BeautifulSoup(page.content, "html.parser")
+    # extraction de l'image
+    img = soup.find("div", class_="item active").find("img")
+    lien_img = img["src"]
+    lien_img = lien_img.replace("../../", "http://books.toscrape.com/")
+    image = requests.get(lien_img).content
 
-    # extraction des url des pages Produits de la première page
+    with open(titre + ".jpg", "wb") as file:
+        file.write(image)
+
+
+def scraper_categorie(url_categorie):
+    # définition de la fonction scraper_categorie pour obtenir la liste de toutes les url des livres de cette catégorie
+
+    page = requests.get(url_categorie)  # extraction du code HTML de la catégorie
+    soup = BeautifulSoup(page.content, "html.parser")  # transformation du code HTML en objet soup
+
+    # extraction des url des livres de la première page
     livres = soup.findAll("h3")
-    liens_livres = []
+    url_livres = []
     for livre in livres:
-        lien = livre.find("a")["href"]
-        lien = lien.replace("../../../", "http://books.toscrape.com/catalogue/")
-        liens_livres.append(lien)
+        lien_livre = livre.find("a")["href"]
+        lien_livre = lien_livre.replace("../../../", "http://books.toscrape.com/catalogue/")
+        url_livres.append(lien_livre)
 
-    # extraction des url des pages Produits des pages suivantes
-    url = lien_categorie
+    # extraction des url des livres des pages suivantes
     page_suivante = soup.find("li", class_="next")
     page_precedente = "index.html"
 
     while page_suivante:
         lien_page_suivante = page_suivante.find("a")["href"]
-        url = url.replace(page_precedente, lien_page_suivante)
-        page = requests.get(url)
+        url_categorie = url_categorie.replace(page_precedente, lien_page_suivante)
+        page = requests.get(url_categorie)
         soup = BeautifulSoup(page.content, "html.parser")
 
-        page_suivante = soup.find("li", class_="next")  # recherche dans cette page s'il y en existe une autre
+        page_suivante = soup.find("li", class_="next")  # recherche dans cette page s'il en existe une autre
         page_precedente = lien_page_suivante
 
         livres = soup.findAll("h3")
         for livre in livres:
-            lien = livre.find("a")["href"]
-            lien = lien.replace("../../../", "http://books.toscrape.com/catalogue/")
-            liens_livres.append(lien)
+            lien_livre = livre.find("a")["href"]
+            lien_livre = lien_livre.replace("../../../", "http://books.toscrape.com/catalogue/")
+            url_livres.append(lien_livre)
 
-    print("Dans la catégorie " + categorie + ", il y a " + str(len(liens_livres)) + " livres. Extraction des images ...")
+    return url_livres
 
-    # chargement des donnees dans un dossier
-    os.mkdir(categorie)
-    path = os.path.join(chemin, categorie)
-    os.chdir(path)
-    for url in liens_livres:
-        page = requests.get(url)
 
-        soup = BeautifulSoup(page.content, "html.parser")
-
-        titre = soup.find("h1")
-        titre = titre.string
-        titre = re.sub(r"[^a-zA-Z0-9 ]", "", titre)
-
-        img = soup.find("div", class_="item active").find("img")
-        lien = img["src"]
-        lien = lien.replace("../../", "http://books.toscrape.com/")
-        image = requests.get(lien).content
-
-        with open(titre + ".jpg", "wb") as file:
-            file.write(image)
-
-    os.chdir(chemin)
+# extraction des images d'une catégorie
+for url in scraper_categorie("http://books.toscrape.com/catalogue/category/books/travel_2/index.html"):
+    telecharger_images(url)
