@@ -24,7 +24,7 @@ cd Projet_2
 
 ### 2. Créer un environnement virtuel et l'activer
 
-* Pour ma part, je travaille sous Windows et avec l'IDE PyCharm, la création et l'activation d'un environnement virtuel se fait via les paramètres de l'IDE *
+*Pour ma part, je travaille sous Windows et avec l'IDE PyCharm, la création d'un environnement virtuel se fait via les paramètres de l'IDE*
 
 Depuis un terminal sous Windows :
 ```bash
@@ -44,8 +44,21 @@ Installer les packages du requirements.txt :
 ```bash
 pip install -r requirements.txt
 ```
-Lancer le script python afin d'obtenir un dossier data contenant un dossier par catégorie avec le fichier csv et toutes les images :
+Lancer le script python :
+
+Depuis un terminal sous Windows :
 ```bash
 python script.py
 ```
+
+Depuis un terminal sous Linux ou Mac :
+```bash
+python3 script.py
+```
+
+## Résultat
+
+La bibliothèque http://books.toscrape.com/ rassemble 1000 livres répartis dans 50 catégories.
+En exécutant le script, nous obtenons un dossier data contenant un sous-dossier par catégorie.
+Dans chaque dossier catégorie, nous y retrouvons le fichier CSV contenant toutes les données des livres, ainsi que les images de couverture de chaque livre.
 
